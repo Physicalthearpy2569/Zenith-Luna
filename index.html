@@ -70,11 +70,11 @@ button{font:inherit;font-weight:600;border-radius:8px;padding:9px 16px;cursor:po
 .lak .res{font-size:15px}
 .tag{display:inline-block;font-size:12.5px;padding:1px 8px;border-radius:999px;background:var(--accent-soft);color:var(--ink);font-weight:500}
 /* wheel */
-.wheelbox{display:grid;grid-template-columns:minmax(0,360px) 1fr;gap:18px;align-items:center}
+.wheelbox{display:grid;grid-template-columns:minmax(0,400px) 1fr;gap:18px;align-items:center}
 @media (max-width:640px){.wheelbox{grid-template-columns:1fr}}
-svg.wheel{width:100%;max-width:360px;height:auto;display:block;margin:0 auto}
+svg.wheel{width:100%;max-width:400px;height:auto;display:block;margin:0 auto}
 .legend{display:flex;flex-direction:column;gap:6px;font-size:14px;min-width:0}
-.legend span.k{display:inline-block;min-width:34px;font-family:var(--f-num);font-weight:500}
+.legend span.k{display:inline-block;min-width:56px;margin-right:6px;font-family:var(--f-num);font-weight:500}
 /* tables */
 .tbl{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:14.5px;font-variant-numeric:tabular-nums}
@@ -324,33 +324,46 @@ function board(title,head,l,label,extra){
   ${extra||''}</div>`;
 }
 
+function sunIcon(x,y,s,hollow){
+  let g=`<g transform="translate(${x.toFixed(1)},${y.toFixed(1)})">`;
+  for(let k=0;k<8;k++){const a=k*Math.PI/4;g+=`<line x1="${(Math.cos(a)*s*0.95).toFixed(2)}" y1="${(Math.sin(a)*s*0.95).toFixed(2)}" x2="${(Math.cos(a)*s*1.55).toFixed(2)}" y2="${(Math.sin(a)*s*1.55).toFixed(2)}" stroke="${hollow?'var(--muted)':'var(--accent)'}" stroke-width="${hollow?1.4:1.8}" stroke-linecap="round"/>`;}
+  g+=`<circle r="${(s*0.7).toFixed(2)}" fill="${hollow?'var(--surface)':'var(--accent)'}" stroke="${hollow?'var(--muted)':'var(--accent)'}" stroke-width="1.5"/></g>`;return g;}
+function moonIcon(x,y,s,hollow){
+  const r=s*1.25,R2=r*1.3;
+  return `<g transform="translate(${x.toFixed(1)},${y.toFixed(1)}) rotate(-20) translate(${(r*0.3).toFixed(2)},0)"><path d="M 0 ${(-r).toFixed(2)} A ${r.toFixed(2)} ${r.toFixed(2)} 0 0 0 0 ${r.toFixed(2)} A ${R2.toFixed(2)} ${R2.toFixed(2)} 0 0 1 0 ${(-r).toFixed(2)} Z" fill="${hollow?'var(--surface)':'var(--ink)'}" stroke="${hollow?'var(--muted)':'var(--ink)'}" stroke-width="1.4" stroke-linejoin="round"/></g>`;}
 function wheel(r){
-  const S=360,c=S/2,R1=172,R0=70,items=Array.from({length:12},()=>[]);
-  items[r.ind.sign].push({t:'๑',k:'ind'});items[r.bc.sign].push({t:'๒',k:'bc'});
-  r.mr.forEach((m,i)=>items[m.sign].push({t:'ม'+(i+1),k:'mr'}));
-  items[r.indJon.sign].push({t:'๑จ',k:'jon'});items[r.bcJon.sign].push({t:'๒จ',k:'jon'});
+  const S=400,c=S/2,R1=190,R0=78,items=Array.from({length:12},()=>[]);
+  r.mr.forEach((m,i)=>items[m.sign].push('ม'+(i+1)));
+  const P=(R,a)=>[c+R*Math.cos(a*Math.PI/180),c+R*Math.sin(a*Math.PI/180)];
+  const ps=(R,a)=>P(R,a).map(v=>v.toFixed(1)).join(',');
+  // longitude (deg 0–360) → screen angle; เมษ centred at top, signs run counter-clockwise
+  const ang=lon=>-75-lon;
+  const lonOf=(sign,adeet)=>sign*30+ymdToMin(adeet)/(9*MIN_YEAR)*30;
   let g='';
   for(let i=0;i<12;i++){
-    // เมษ at top, counter-clockwise
-    const a0=(-90-15-i*30)*Math.PI/180, a1=(-90+15-i*30)*Math.PI/180, am=(-90-i*30)*Math.PI/180;
-    const p=(R,a)=>`${(c+R*Math.cos(a)).toFixed(1)},${(c+R*Math.sin(a)).toFixed(1)}`;
-    g+=`<path d="M${p(R0,a0)} L${p(R1,a0)} A${R1},${R1} 0 0 1 ${p(R1,a1)} L${p(R0,a1)} A${R0},${R0} 0 0 0 ${p(R0,a0)} Z" fill="var(--surface)" stroke="var(--line)"/>`;
-    const lx=c+(R1-16)*Math.cos(am),ly=c+(R1-16)*Math.sin(am);
-    g+=`<text x="${lx.toFixed(1)}" y="${(ly+4).toFixed(1)}" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="Sarabun,sans-serif">${RASI[i]}</text>`;
-    const list=items[i];
-    list.forEach((it,j)=>{
-      const rr=R1-40-Math.floor(j/2)*18, off=(j%2? 9:-9)*(list.length>1?1:0);
-      const ax=am+off*Math.PI/180;
-      const x=c+rr*Math.cos(ax),y=c+rr*Math.sin(ax);
-      const col=it.k==='mr'?'var(--danger)':it.k==='jon'?'var(--muted)':'var(--accent)';
-      g+=`<text x="${x.toFixed(1)}" y="${(y+5).toFixed(1)}" text-anchor="middle" font-size="${it.k==='mr'?12:14}" font-weight="700" fill="${col}" font-family="Sarabun,sans-serif">${it.t}</text>`;
-    });
+    const a0=-75-i*30, a1=-105-i*30, am=-90-i*30;
+    g+=`<path d="M${ps(R0,a1)} L${ps(R1,a1)} A${R1},${R1} 0 0 1 ${ps(R1,a0)} L${ps(R0,a0)} A${R0},${R0} 0 0 0 ${ps(R0,a1)} Z" fill="var(--surface)" stroke="var(--line)"/>`;
+    for(let k=1;k<9;k++){const a=a0-k*30/9;g+=`<line x1="${P(R0,a)[0].toFixed(1)}" y1="${P(R0,a)[1].toFixed(1)}" x2="${P(R0+7,a)[0].toFixed(1)}" y2="${P(R0+7,a)[1].toFixed(1)}" stroke="var(--line)"/>`;}
+    const [lx,ly]=P(R1-16,am);
+    g+=`<text x="${lx.toFixed(1)}" y="${(ly+4).toFixed(1)}" text-anchor="middle" font-size="12" fill="var(--muted)" font-family="Sarabun,sans-serif">${RASI[i]}</text>`;
+    items[i].forEach((t,j)=>{const off=items[i].length>1?(j%2?7:-7):0;const [x,y]=P(R1-50-Math.floor(j/2)*16,am+off);
+      g+=`<text x="${x.toFixed(1)}" y="${(y+4).toFixed(1)}" text-anchor="middle" font-size="12" font-weight="700" fill="var(--danger)" font-family="Sarabun,sans-serif">${t}</text>`;});
   }
+  // จร (hollow) on the outer track, กำเนิด (solid) on the inner track
+  const pts=[
+    {lon:lonOf(r.indJon.sign,r.indJon.adeet),R:R0+46,f:sunIcon,h:true},
+    {lon:lonOf(r.bcJon.sign,r.bcJon.adeet),R:R0+46,f:moonIcon,h:true},
+    {lon:lonOf(r.ind.sign,r.ind.adeet),R:R0+22,f:sunIcon,h:false},
+    {lon:lonOf(r.bc.sign,r.bc.adeet),R:R0+22,f:moonIcon,h:false}];
+  pts.forEach(p=>{const a=ang(p.lon);const [x0,y0]=P(R0,a),[x1,y1]=P(p.R-9,a);
+    g+=`<line x1="${x0.toFixed(1)}" y1="${y0.toFixed(1)}" x2="${x1.toFixed(1)}" y2="${y1.toFixed(1)}" stroke="${p.h?'var(--muted)':'var(--accent)'}" stroke-width="1" stroke-dasharray="${p.h?'2 2':'none'}"/>`;
+    const [x,y]=P(p.R,a);g+=p.f(x,y,7,p.h);});
   g+=`<circle cx="${c}" cy="${c}" r="${R0-6}" fill="var(--bg)" stroke="var(--line)"/>`;
-  g+=`<text x="${c}" y="${c-4}" text-anchor="middle" font-size="13" fill="var(--ink)" font-family="Sarabun,sans-serif" font-weight="600">จ.ศ. ${r.csi.cs}</text>`;
+  g+=`<text x="${c}" y="${c-4}" text-anchor="middle" font-size="14" fill="var(--ink)" font-family="Sarabun,sans-serif" font-weight="600">จ.ศ. ${r.csi.cs}</text>`;
   g+=`<text x="${c}" y="${c+16}" text-anchor="middle" font-size="12" fill="var(--muted)" font-family="Sarabun,sans-serif">อายุ ${r.age.y} ปี</text>`;
   return `<svg class="wheel" viewBox="0 0 ${S} ${S}" role="img" aria-label="วงจักรราศีแสดงตำแหน่งอินทภาส บาทจันทร์ และมฤตยู">${g}</svg>`;
 }
+const ICON=(f,h)=>`<svg width="22" height="22" viewBox="-11 -11 22 22" style="vertical-align:middle;margin-right:6px" aria-hidden="true">${f(0,0,6,h)}</svg>`;
 
 function run(){
   $('err').hidden=true;
@@ -367,10 +380,12 @@ function run(){
   $('exflag').textContent=isEx?'ข้อมูลชุดนี้คือตัวอย่างในตำรา (เกิด 19 เม.ย. 2532 เวลา 10.30 น.) ผลตรงกับตำราทุกขั้น':'';
   $('boards').innerHTML=board('อินทภาสกำเนิด','๑',r.ind,'อินทภาส')+board('บาทจันทร์กำเนิด','๒',r.bc,'บาทจันทร์');
   $('wheel').innerHTML=wheel(r);
-  $('legend').innerHTML=`<div><span class="k" style="color:var(--accent)">๑</span>อินทภาสกำเนิด ราศี${RASI[r.ind.sign]}</div>
-   <div><span class="k" style="color:var(--accent)">๒</span>บาทจันทร์กำเนิด ราศี${RASI[r.bc.sign]}</div>
+  $('legend').innerHTML=`<div>${ICON(sunIcon,false)}อินทภาสกำเนิด ราศี${RASI[r.ind.sign]} นวางศ์ ${r.ind.navamsa}</div>
+   <div>${ICON(moonIcon,false)}บาทจันทร์กำเนิด ราศี${RASI[r.bc.sign]} นวางศ์ ${r.bc.navamsa}</div>
+   <div>${ICON(sunIcon,true)}อินทภาสจร ราศี${RASI[r.indJon.sign]} นวางศ์ ${r.indJon.navamsa}</div>
+   <div>${ICON(moonIcon,true)}บาทจันทร์จร ราศี${RASI[r.bcJon.sign]} นวางศ์ ${r.bcJon.navamsa}</div>
    <div><span class="k" style="color:var(--danger)">ม1–ม6</span>ฆาฏมฤตยู 6 แห่ง</div>
-   <div><span class="k" style="color:var(--muted)">๑จ ๒จ</span>อินทภาส บาทจันทร์ จร ณ วันที่เลือก</div>`;
+   <p class="note">สัญลักษณ์วางตามจุดจริงในราศี (ปีอดีต ÷ 9 ส่วน) ขีดเล็กรอบในแบ่งราศีละ 9 นวางศ์</p>`;
   $('mr').innerHTML=r.mr.map((m,i)=>`<tr class="m"><td>${i+1}</td><td>${m.n} <span class="note">(${m.sub})</span></td><td>${m.firk} ${m.name}</td><td>${m.bon}</td><td>${m.baat}</td><td>${m.navamsa}</td><td>${RASI[m.sign]}</td></tr>`).join('');
   const jb=(t,h,l,j)=>`<div class="lak"><h3>${t}</h3>
     <div class="lakgrid"><div class="side l"><span class="cap">อดีต</span><span>${j.adeet.y} ปี</span><span>${j.adeet.mo} เดือน</span><span>${j.adeet.d} วัน</span></div>
